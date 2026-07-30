@@ -72,11 +72,23 @@ const sendOTPEmail = async (userEmail, otp, type) => {
         console.log("8. About to send email");
         console.log(mailOptions);
 
-        const info = await transporter.sendMail(mailOptions);
+        try {
+    const info = await Promise.race([
+        transporter.sendMail(mailOptions),
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("SMTP Timeout after 15 seconds")), 15000)
+        )
+    ]);
 
-        console.log("9. Email sent successfully");
-        console.log(info);
+    console.log("9. Email sent successfully");
+    console.log(info);
 
+} catch (err) {
+    console.error("SMTP ERROR:");
+    console.error(err);
+
+    throw err;
+}
     } catch (error) {
         console.error("SEND OTP ERROR:");
         console.error(error);
