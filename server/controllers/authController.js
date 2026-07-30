@@ -12,9 +12,17 @@ const generateToken = (id, role) => {
 
 exports.register = async (req, res) => {
     try {
+        console.log("1. Register API called");
+
         const { name, email, password, role } = req.body;
+
         let user = await User.findOne({ email });
-        if (user) return res.status(400).json({ message: 'User already exists' });
+        if (user) {
+            console.log("User already exists");
+            return res.status(400).json({ message: "User already exists" });
+        }
+
+        console.log("2. Creating user");
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
@@ -23,20 +31,38 @@ exports.register = async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            role: 'user', // Hardcoded to prevent frontend passing role
-            isVerified: false
+            role: "user",
+            isVerified: false,
         });
+
+        console.log("3. User created");
 
         const otp = generateOTP();
-        await OTP.create({ email, otp, action: 'account_verification' });
-        await sendOTPEmail(email, otp, 'account_verification');
+        console.log("4. OTP Generated:", otp);
+
+        await OTP.create({
+            email,
+            otp,
+            action: "account_verification",
+        });
+
+        console.log("5. OTP saved to MongoDB");
+
+        await sendOTPEmail(email, otp, "account_verification");
+
+        console.log("6. sendOTPEmail finished");
 
         res.status(201).json({
-            message: 'OTP sent to email. Please verify.',
-            email: user.email
+            message: "OTP sent to email. Please verify.",
+            email: user.email,
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        console.error("REGISTER ERROR:", error);
+
+        res.status(500).json({
+            message: "Server Error",
+            error: error.message,
+        });
     }
 };
 
